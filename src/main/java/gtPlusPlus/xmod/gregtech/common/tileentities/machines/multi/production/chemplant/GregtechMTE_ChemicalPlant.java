@@ -542,18 +542,16 @@ public class GregtechMTE_ChemicalPlant extends GregtechMeta_MultiBlockBase<Gregt
         }
     }
 
-    private void damageCatalyst(ItemStack aStack, int minParallel) {
+    private void damageCatalyst(ItemStack aStack) {
         // Awakened Draconium Coils with Tungstensteel Pipe Casings (or above) no longer consume catalysts.
-        if (!isCatalystDamageable()) return;
-        for (int i = 0; i < minParallel; i++) {
-            if (MathUtils.randFloat(0, 10000000) / 10000000f < (1.2f - (0.2 * this.mPipeCasingTier))) {
-                int damage = getDamage(aStack) + 1;
-                if (damage >= getMaxCatalystDurability()) {
-                    addOutput(CI.getEmptyCatalyst(1));
-                    aStack.stackSize -= 1;
-                } else {
-                    setDamage(aStack, damage);
-                }
+        if (isCatalystDamageable()
+                && (MathUtils.randFloat(0, 10000000) / 10000000f < (1.2f - (0.2 * this.mPipeCasingTier)))) {
+            int damage = getDamage(aStack) + 1;
+            if (damage >= getMaxCatalystDurability()) {
+                addOutput(CI.getEmptyCatalyst(1));
+                aStack.stackSize -= 1;
+            } else {
+                setDamage(aStack, damage);
             }
         }
     }
@@ -608,23 +606,22 @@ public class GregtechMTE_ChemicalPlant extends GregtechMeta_MultiBlockBase<Gregt
                 return new GT_ParallelHelper() {
 
                     @Override
-                    protected boolean tryConsumeRecipeInputs(GT_Recipe recipe, FluidStack[] fluids, ItemStack[] items,
-                            int minParallel) {
+                    protected boolean tryConsumeRecipeInputs(GT_Recipe recipe, FluidStack[] fluids, ItemStack[] items) {
                         if (catalystRecipe != null && getDamage(catalystRecipe) >= getMaxCatalystDurability()) {
                             return false;
                         }
-                        boolean hasInputs = super.tryConsumeRecipeInputs(recipe, fluids, items, minParallel);
+                        boolean hasInputs = super.tryConsumeRecipeInputs(recipe, fluids, items);
                         if (hasInputs && catalystRecipe != null) {
-                            damageCatalyst(catalystRecipe, minParallel);
+                            damageCatalyst(catalystRecipe);
                         }
-                        return hasInputs;
+                        return true;
                     }
                 }.setRecipe(recipe).setItemInputs(inputItems).setFluidInputs(inputFluids)
                         .setAvailableEUt(availableVoltage * availableAmperage)
                         .setMachine(machine, protectItems, protectFluids)
                         .setRecipeLocked(recipeLockableMachine, isRecipeLocked).setMaxParallel(maxParallel)
-                        .setEUtModifier(euModifier).enableBatchMode(batchSize).setConsumption(true)
-                        .setOutputCalculation(true);
+                        .setEUtModifier(euModifier).enableBatchMode(batchSize).enableConsumption()
+                        .enableOutputCalculation();
             }
         };
     }
